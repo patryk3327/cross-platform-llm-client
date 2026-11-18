@@ -1,0 +1,68 @@
+name: Build iOS (unsigned IPA)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or branch to build"
+        required: true
+        default: "1.0.7-cluster"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: pod install --repo-update
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          APP=build/ios/iphoneos/Runner.app
+          test -d "$APP"
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
+          NAME="PrivateLM-${{ inputs.ref }}-unsigned.ipa"
+          zip -qry "$NAME" Payload
+          ls -lh "$NAME"
+          echo "IPA_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrivateLM-iOS-${{ inputs.ref }}
+          path: ${{ env.IPA_NAME }}
+
+      - name: Publish as release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-${{ inputs.ref }}
+          name: PrivateLM iOS ${{ inputs.ref }} (unsigned)
+          body: Unsigned IPA built from tag ${{ inputs.ref }}. Sign and install with AltStore, AltServer or Sideloadly.
+          files: ${{ env.IPA_NAME }}
+          target_commitish: ${{ github.sha }}
