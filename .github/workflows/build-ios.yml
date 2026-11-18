@@ -45,6 +45,13 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
+      - name: Build llama.cpp for iOS
+        run: |
+          command -v ninja || brew install ninja
+          command -v cmake || brew install cmake
+          bash local_plugins/llama_flutter_android/scripts/build_llama_ios.sh
+          ls -lh local_plugins/llama_flutter_android/ios/llama_ios/lib
+
       - name: Install CocoaPods
         working-directory: ios
         run: pod install --repo-update
