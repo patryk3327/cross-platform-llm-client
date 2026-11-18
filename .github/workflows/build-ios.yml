@@ -18,7 +18,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ inputs.runner }}
-    timeout-minutes: 300
+    timeout-minutes: 120
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -44,22 +44,6 @@ jobs:
 
       - name: Get packages
         run: flutter pub get
-
-      - name: Cache LiteRT-LM build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/LiteRTLMMinimal
-            ~/.cache/bazel
-          key: litertlm-${{ inputs.runner }}-${{ hashFiles('local_plugins/flutter_litert_lm/scripts/build_ios_frameworks.sh') }}
-
-      - name: Build LiteRT-LM xcframeworks
-        run: |
-          command -v bazelisk || command -v bazel || brew install bazelisk
-          command -v git-lfs || brew install git-lfs
-          git lfs install
-          bash local_plugins/flutter_litert_lm/scripts/build_ios_frameworks.sh "$HOME/LiteRTLMMinimal"
-          ls -lh local_plugins/flutter_litert_lm/ios/Frameworks
 
       - name: Build llama.cpp for iOS
         run: |
