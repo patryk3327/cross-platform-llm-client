@@ -116,7 +116,10 @@ class InferenceEngine {
       print('[Inference]   Recommended layers: ${gpu.recommendedGpuLayers}');
 
       // The plugin decides eligibility (SoC/driver blocklist, free RAM).
-      if (gpu.vulkanSupported && gpu.recommendedGpuLayers > 0) {
+      // iOS runs llama.cpp on Metal, not Vulkan, so the Vulkan flag is
+      // always false there: treat iOS as GPU-capable.
+      if ((gpu.vulkanSupported || Platform.isIOS) &&
+          gpu.recommendedGpuLayers > 0) {
         // On phones the GPU shares system RAM, and offloading copies the
         // weights into GPU buffers (CPU mode maps the file instead). If the
         // model + vision file won't fit in free RAM with that copy, Android's

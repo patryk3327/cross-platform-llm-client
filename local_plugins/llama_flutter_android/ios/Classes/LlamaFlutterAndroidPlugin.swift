@@ -204,8 +204,10 @@ public class LlamaFlutterAndroidPlugin: NSObject, FlutterPlugin, LlamaHostApi {
 
     func detectGpu(completion: @escaping (Result<GpuInfo, Error>) -> Void) {
         let totalMemory = ProcessInfo.processInfo.physicalMemory
-        // Estimate free memory as 50% of total for now, or just return total as a proxy if unavailable
-        let freeMemory = totalMemory / 2 
+        // What this app may still allocate before iOS ends it (honours the
+        // increased-memory-limit entitlement); fall back to half of RAM.
+        let available = UInt64(LlamaClusterWorker.availableMemoryMb()) * 1024 * 1024
+        let freeMemory = available > 0 ? available : totalMemory / 2
         
         let info = GpuInfo(
             vulkanSupported: false,
